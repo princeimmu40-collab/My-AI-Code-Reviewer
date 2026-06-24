@@ -1,15 +1,24 @@
 name: AI Code Review
-on: [pull_request]
+on: 
+  pull_request:
+    types: [opened, synchronize, reopened]
 
 jobs:
   review:
     runs-on: ubuntu-latest
     permissions:
-      pull-requests: write
+      contents: read
+      pull-requests: write # బాట్ కామెంట్ చేయడానికి ఇది చాలా ముఖ్యం
     steps:
       - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+          
       - name: Install dependencies
         run: pip install google-generativeai requests
+        
       - name: Run AI Review
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
