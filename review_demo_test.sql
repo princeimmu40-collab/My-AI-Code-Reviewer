@@ -12,4 +12,4 @@ CREATE TABLE USERS_demo (
 
 -- ప్రైమరీ కీ లేకుండా డేటాను ఇన్సర్ట్ చేయడం వల్ల డూప్లికేట్ ఎంట్రీలు వచ్చే ప్రమాదం ఉంది.
 INSERT INTO USERS_demo (id, name, email) VALUES (1, 'Alice', 'alice@example.com');
-INSERT INTO USERS (id, name, email) VALUES (1, 'Bob', 'bob@example.com'); -- ఇది డూప్లికేట్ ఐడి, ప్రైమరీ కీ లేకపోవడం వల్ల ఇది రన్ అవుతుంది!
+INSERT INTO USERS_demo (id, name, email) VALUES (1, 'Bob', 'bob@example.com'); -- ఇది డూప్లికేట్ ఐడి, ప్రైమరీ కీ లేకపోవడం వల్ల ఇది రన్ అవుతుంది!
