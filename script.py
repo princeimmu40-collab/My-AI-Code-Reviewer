@@ -2,42 +2,46 @@ import os
 import json
 import requests
 import google.generativeai as genai
+import time
 
-# 1. API Configuration
+# 1. API కీ సెటప్
 genai.configure(api_key=os.environ['GEMINI_API_KEY'])
-model = genai.GenerativeModel('models/gemini-3.5-flash')
+model = genai.GenerativeModel('gemini-3.5-flash')
 
-# 2. Get GitHub Event Data
+# 2. GitHub ఈవెంట్ డేటా పొందడం
 event_path = os.environ['GITHUB_EVENT_PATH']
 with open(event_path, 'r') as f:
     event_data = json.load(f)
 
-# 3. Fetch PR Diff
+# Diff URL మరియు Comments URL పొందడం
 diff_url = event_data['pull_request']['diff_url']
-response = requests.get(diff_url)
-diff_code = response.text
-
-# 4. Generate AI Review
-prompt = f"""
-మీరు ఒక సీనియర్ కోడ్ రివ్యూవర్. ఈ క్రింది కోడ్ మార్పులను రివ్యూ చేయండి. 
-ముఖ్యంగా SQL ఫైల్స్ అయితే అందులో Primary Keys, SQL Injection vulnerabilities లేదా Best Practices ఏమైనా మిస్ అయ్యాయో చూడండి.
-రివ్యూను మార్క్‌డౌన్ (Markdown) ఫార్మాట్‌లో ఇవ్వండి:
-
-{diff_code}
-"""
-ai_response = model.generate_content(prompt)
-
-# 5. Post Comment to PR
 comments_url = event_data['pull_request']['comments_url']
-headers = {
-    "Authorization": f"Bearer {os.environ['GITHUB_TOKEN']}",
-    "Accept": "application/vnd.github.v3+json"
-}
-payload = {"body": ai_response.text}
 
-post_res = requests.post(comments_url, json=payload, headers=headers)
+# 3. కోడ్ మార్పులను డౌన్‌లోడ్ చేయడం
+response_diff = requests.get(diff_url)
+diff_code = response_diff.text
 
-if post_res.status_code == 201:
-    print("Review comment posted successfully!")
+# 4. AI రివ్యూ (Retry లాజిక్ తో)
+def generate_review(code):
+    for i in range(5):
+        try:
+            return model.generate_content(f"Review this code: {code}")
+        except Exception as e:
+            # 20 సెకన్ల విరామం ఇస్తుంది
+            time.sleep(20) 
+            print(f"Attempt {i+1} failed: {e}")
+    return None
+
+review_response = generate_review(diff_code)
+
+# 5. GitHub లో కామెంట్ పోస్ట్ చేయడం
+if review_response:
+    headers = {
+        "Authorization": f"Bearer {os.environ['GITHUB_TOKEN']}",
+        "Accept": "application/vnd.github.v3+json"
+    }
+    payload = {"body": review_response.text}
+    requests.post(comments_url, json=payload, headers=headers)
+    print("Review posted successfully!")
 else:
-    print(f"Failed to post comment: {post_res.status_code} - {post_res.text}")
+    print("Failed to generate review.")
