@@ -5,6 +5,10 @@ import google.generativeai as genai
 
 # 1. GitHub Action నుండి PR వివరాలను పొందడం
 event_path = os.getenv('GITHUB_EVENT_PATH')
+if not event_path:
+    print("GITHUB_EVENT_PATH దొరకలేదు.")
+    exit(1)
+
 with open(event_path, 'r') as f:
     event_data = json.load(f)
 
@@ -14,7 +18,7 @@ comments_url = pull_request.get('comments_url')
 token = os.getenv('GITHUB_TOKEN')
 
 if not diff_url or not comments_url:
-    print("PR సమాచారం అందలేదు.")
+    print("PR సమాచారం అందలేదు (diff_url లేదా comments_url లేదు).")
     exit(0)
 
 # 2. కోడ్ మార్పులను (Diff) డౌన్‌లోడ్ చేయడం
@@ -22,6 +26,7 @@ response = requests.get(diff_url)
 diff_code = response.text
 
 # 3. Gemini AI ద్వారా రివ్యూ చేయడం
+# ఇక్కడ 'gemini-1.5-flash' లేకపోతే 'gemini-1.5-pro' వాడండి
 genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
 model = genai.GenerativeModel('gemini-1.5-flash')
 
