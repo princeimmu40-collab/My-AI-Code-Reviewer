@@ -14,23 +14,20 @@ comments_url = pull_request.get('comments_url')
 token = os.getenv('GITHUB_TOKEN')
 
 # 2. కోడ్ మార్పులను (Diff) డౌన్‌లోడ్ చేయడం
-response = requests.get(diff_url)
-diff_code = response.text
+if diff_url:
+    response = requests.get(diff_url)
+    diff_code = response.text
+else:
+    diff_code = "No diff available."
 
-# 3. Gemini AI సెటప్
+# 3. Gemini AI సెటప్ (కొత్త మోడల్‌తో)
 genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
 
-# DEBUG: మీ API కీకి అందుబాటులో ఉన్న మోడల్స్ చూడటానికి
-print("Available models:")
-for m in genai.list_models():
-    if 'generateContent' in m.supported_generation_methods:
-        print(m.name)
-
-# ఇక్కడ 'models/gemini-1.5-flash' లేదా లాగ్స్‌లో కనిపించిన పేరును వాడండి
-model = genai.GenerativeModel('models/gemini-1.5-flash')
+# లాగ్స్‌లో కనిపించిన మోడల్‌ను ఇక్కడ వాడుతున్నాము
+model = genai.GenerativeModel('models/gemini-3.1-flash')
 
 # 4. రివ్యూ జనరేషన్
-prompt = f"Review this code and provide feedback in Markdown:\n\n{diff_code}"
+prompt = f"You are a senior developer. Review the following code diff and provide constructive feedback in Markdown format:\n\n{diff_code}"
 response = model.generate_content(prompt)
 review_text = response.text
 
@@ -40,4 +37,10 @@ headers = {
     "Accept": "application/vnd.github.v3+json"
 }
 payload = {"body": review_text}
-requests.post(comments_url, json=payload, headers=headers)
+
+if comments_url:
+    post_response = requests.post(comments_url, json=payload, headers=headers)
+    if post_response.status_code == 201:
+        print("రివ్యూ సక్సెస్‌ఫుల్‌గా పోస్ట్ చేయబడింది!")
+    else:
+        print(f"ఎర్రర్: {post_response.status_code} - {post_response.text}")
