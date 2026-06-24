@@ -19,8 +19,8 @@ jobs:
       - name: Run AI Review
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GITHUB_EVENT_PATH: ${{ github.event_path }}
         run: |
-          pip install openai requests
-          # మీ ఫైల్ పేరు script.py అయితే, దాన్ని ఇక్కడ రన్ చేయండి
+          pip install google-generativeai requests
           python script.py
